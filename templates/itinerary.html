@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Travel Itinerary - AI Travel Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .itinerary-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+        
+        .itinerary-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .itinerary-header h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .itinerary-content {
+            font-size: 1.1rem;
+        }
+        
+        .back-button {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Your Travel Itinerary</h1>
+        
+        <button class="back-button" onclick="window.location.href='/'">Back to Search</button>
+        
+        <div class="itinerary-container">
+            <div class="itinerary-header">
+                <h2>{{ city }} - {{ vacation_type }}</h2>
+                <p><strong>Travel Date:</strong> {{ travel_date }}</p>
+            </div>
+            
+            <div class="itinerary-content">
+                {{ itinerary | safe }}
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

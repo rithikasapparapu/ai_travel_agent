@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flights to {{ city }} - AI Travel Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='flights.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Flights to {{ city }}</h1>
+        
+        <!-- <button class="back-button" onclick="window.location.href='/flights'">Back to Destinations</button> -->
+        
+        <div class="form-group">
+            <h2>Trip Details</h2>
+            <p><strong>Vacation Type:</strong> <span id="vacation-type"></span></p>
+            <p><strong>Travel Date:</strong> <span id="travel-date"></span></p>
+            <p><strong>Budget:</strong> $<span id="budget"></span></p>
+            <p><strong>Vacation Length:</strong> <span id="vacation-length"></span> days</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            <p>Loading flights...</p>
+        </div>
+        
+        <div id="flights-container"></div>
+        
+        <div class="hotels-section">
+            <h2>Available Hotels</h2>
+            <div id="hotels-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const city = urlParams.get('city');
+        const vacationType = urlParams.get('vacation_type');
+        const travelDate = urlParams.get('travel_date');
+        const budget = urlParams.get('budget');
+        const vacationLength = urlParams.get('vacation_length');
+        
+        // Display trip details
+        document.getElementById('vacation-type').textContent = vacationType;
+        document.getElementById('travel-date').textContent = travelDate;
+        document.getElementById('budget').textContent = budget;
+        document.getElementById('vacation-length').textContent = vacationLength;
+        
+        // Fetch flights for this destination
+        async function fetchDestinationFlights() {
+            try {
+                const response = await fetch('/get_destination_flights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        city: city,
+                        vacation_type: vacationType,
+                        travel_date: travelDate,
+                        budget: budget,
+                        vacation_length: vacationLength
+                    })
+                });
+                
+                const data = await response.json();
+                displayFlights(data.flights);
+                displayHotels(data.hotels);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = '<p>Error loading flights and hotels. Please try again.</p>';
+            }
+        }
+        
+        function displayFlights(flights) {
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('flights-container');
+            
+            if (!flights || flights.length === 0) {
+                container.innerHTML = '<div class="no-flights">No flights available for this destination.</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="flights-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="airline">Airline</th>
+                            <th data-sort="departure">Departure</th>
+                            <th data-sort="arrival">Arrival</th>
+                            <th data-sort="duration">Duration</th>
+                            <th data-sort="price">Price</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            flights.forEach(flight => {
+                html += `
+                    <tr data-price="${flight.price}" data-duration="${flight.duration}">
+                        <td>${flight.airline} ${flight.flight_no}${flight.connection_info}</td>
+                        <td>${flight.departure}</td>
+                        <td>${flight.arrival}</td>
+                        <td>${flight.duration}</td>
+                        <td class="price">$${flight.price}</td>
+                        <td><button onclick="selectFlight('${city}', '${flight.airport_code}', ${JSON.stringify(flight).replace(/"/g, '&quot;')})">Select</button></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            
+            // Add sorting functionality
+            document.querySelectorAll('.flights-table th[data-sort]').forEach(header => {
+                header.addEventListener('click', () => {
+                    const table = header.closest('table');
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const column = header.dataset.sort;
+                    const isAsc = !header.classList.contains('asc');
+                    
+                    // Remove sorting classes from all headers
+                    table.querySelectorAll('th').forEach(th => {
+                        th.classList.remove('asc', 'desc');
+                    });
+                    
+                    // Add sorting class to clicked header
+                    header.classList.add(isAsc ? 'asc' : 'desc');
+                    
+                    // Sort rows
+                    rows.sort((a, b) => {
+                        let aValue = a.querySelector(`td:nth-child(${getColumnIndex(column)})`).textContent;
+                        let bValue = b.querySelector(`td:nth-child(${getColumnIndex(column)})`).textContent;
+                        
+                        if (column === 'price' || column === 'duration') {
+                            aValue = parseFloat(a.dataset[column]);
+                            bValue = parseFloat(b.dataset[column]);
+                        }
+                        
+                        if (isAsc) {
+                            return aValue > bValue ? 1 : -1;
+                        } else {
+                            return aValue < bValue ? 1 : -1;
+                        }
+                    });
+                    
+                    // Reorder rows
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
+        
+        function displayHotels(hotels) {
+            const container = document.getElementById('hotels-container');
+            
+            if (!hotels || hotels.length === 0) {
+                container.innerHTML = '<div class="no-hotels">No hotels available for this destination.</div>';
+                return;
+            }
+            
+            let html = '<div class="hotels-grid">';
+            hotels.forEach(hotel => {
+                const totalPrice = hotel.price * vacationLength;
+                const ratingStars = '★'.repeat(Math.round(hotel.rating)) + '☆'.repeat(5 - Math.round(hotel.rating));
+                const imageUrl = hotel.images && hotel.images.length > 0 ? hotel.images[0] : 'https://via.placeholder.com/300x200?text=No+Image';
+                
+                html += '<div class="hotel-card">';
+                html += `<div class="hotel-image"><img src="${imageUrl}" alt="${hotel.name}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"></div>`;
+                html += '<div class="hotel-info">';
+                html += `<h3>${hotel.name}</h3>`;
+                html += `<div class="hotel-rating"><span class="stars">${ratingStars}</span><span class="rating-value">${hotel.rating.toFixed(1)}</span><span class="reviews">(${hotel.reviews} reviews)</span></div>`;
+                html += `<p class="hotel-class">${hotel.hotel_class}</p>`;
+                html += '<div class="price-info">';
+                html += `<p class="price-per-night">$${hotel.price} per night</p>`;
+                html += `<p class="total-price">Total for ${vacationLength} nights: $${totalPrice}</p>`;
+                html += '</div>';
+                html += `<p class="location-rating">Location Rating: ${hotel.location_rating.toFixed(1)}/5</p>`;
+                html += `<p class="address">📍 ${hotel.address}</p>`;
+                html += '<div class="amenities"><strong>Amenities:</strong><ul>';
+                hotel.amenities.forEach(amenity => {
+                    html += `<li>${amenity}</li>`;
+                });
+                html += '</ul></div>';
+                html += '<div class="dates">';
+                html += `<p><strong>Check-in:</strong> ${hotel.check_in}</p>`;
+                html += `<p><strong>Check-out:</strong> ${hotel.check_out}</p>`;
+                html += '</div>';
+                html += `<button class="select-hotel-btn" onclick="selectHotel(${JSON.stringify(hotel).replace(/"/g, '&quot;')})">Select Hotel</button>`;
+                html += '</div></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function selectFlight(city, airportCode, flight) {
+            // Store selected flight in session storage
+            const selectedFlight = {
+                city: city,
+                airport_code: airportCode,
+                flight: flight
+            };
+            sessionStorage.setItem('selectedFlight', JSON.stringify(selectedFlight));
+            
+            // Redirect to itinerary page
+            window.location.href = `/generate_itinerary?city=${encodeURIComponent(city)}&airport_code=${encodeURIComponent(airportCode)}&flight_data=${encodeURIComponent(JSON.stringify(flight))}`;
+        }
+        
+        function selectHotel(hotel) {
+            // Store selected hotel in session storage
+            sessionStorage.setItem('selectedHotel', JSON.stringify(hotel));
+            
+            // You can add additional logic here, like showing a confirmation message
+            alert(`Selected hotel: ${hotel.name}`);
+        }
+        
+        function getColumnIndex(column) {
+            const columns = {
+                'airline': 1,
+                'departure': 2,
+                'arrival': 3,
+                'duration': 4,
+                'price': 5
+            };
+            return columns[column];
+        }
+        
+        // Start fetching flights when page loads
+        fetchDestinationFlights();
+    </script>
+</body>
+</html> 

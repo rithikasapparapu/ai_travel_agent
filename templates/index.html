@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Travel Agent</h1>
+        
+        <div class="form-group">
+            <label for="vacation_type">What type of vacation are you looking for?</label>
+            <input type="text" id="vacation_type" placeholder="e.g., beach vacation, ski trip, cultural tour">
+            
+            <label for="travel_date">When would you like to travel?</label>
+            <input type="date" id="travel_date">
+            
+            <label for="budget">What's your maximum budget for flights? ($)</label>
+            <input type="number" id="budget" value="300" min="100" max="5000">
+            
+            <label for="vacation_length">How many days is your vacation?</label>
+            <input type="number" id="vacation_length" value="7" min="1" max="30">
+            
+            <button onclick="searchFlights()">Search Flights</button>
+        </div>
+        
+        <div id="loading" style="display: none; text-align: center; margin-top: 20px;">
+            <p>Loading destinations...</p>
+        </div>
+    </div>
+
+    <script>
+        async function searchFlights() {
+            const vacationType = document.getElementById('vacation_type').value;
+            const travelDate = document.getElementById('travel_date').value;
+            const budget = document.getElementById('budget').value;
+            const vacationLength = document.getElementById('vacation_length').value;
+            
+            if (!vacationType) {
+                alert('Please enter a vacation type');
+                return;
+            }
+            
+            if (!travelDate) {
+                alert('Please select a travel date');
+                return;
+            }
+            
+            if (!vacationLength || vacationLength < 1) {
+                alert('Please enter a valid vacation length');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            
+            // Redirect to flights page with parameters
+            window.location.href = `/flights?vacation_type=${encodeURIComponent(vacationType)}&travel_date=${encodeURIComponent(travelDate)}&budget=${encodeURIComponent(budget)}&vacation_length=${encodeURIComponent(vacationLength)}`;
+        }
+    </script>
+</body>
+</html> 

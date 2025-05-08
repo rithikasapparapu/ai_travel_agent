@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Destinations - AI Travel Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Available Destinations</h1>
+        
+        <button class="back-button" onclick="window.location.href='/'">Back to Search</button>
+        
+        <div class="form-group">
+            <h2>Trip Details</h2>
+            <p><strong>Vacation Type:</strong> <span id="vacation-type"></span></p>
+            <p><strong>Travel Date:</strong> <span id="travel-date"></span></p>
+            <p><strong>Budget:</strong> $<span id="budget"></span></p>
+            <p><strong>Vacation Length:</strong> <span id="vacation-length"></span> days</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            <p>Loading destinations...</p>
+        </div>
+        
+        <div id="destinations-container"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const vacationType = urlParams.get('vacation_type');
+        const travelDate = urlParams.get('travel_date');
+        const budget = urlParams.get('budget');
+        const vacationLength = urlParams.get('vacation_length');
+        
+        // Display trip details
+        document.getElementById('vacation-type').textContent = vacationType;
+        document.getElementById('travel-date').textContent = travelDate;
+        document.getElementById('budget').textContent = budget;
+        document.getElementById('vacation-length').textContent = vacationLength;
+        
+        // Fetch all destinations
+        async function fetchDestinations() {
+            try {
+                const response = await fetch('/get_all_flights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        vacation_type: vacationType,
+                        travel_date: travelDate,
+                        budget: Number(budget),
+                        vacation_length: Number(vacationLength)
+                    })
+                });
+                
+                const data = await response.json();
+                displayDestinations(data.destinations);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = '<p>Error loading destinations. Please try again.</p>';
+            }
+        }
+        
+        function displayDestinations(destinations) {
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('destinations-container');
+            
+            if (!destinations || destinations.length === 0) {
+                container.innerHTML = '<div class="no-destinations">No destinations found for your search criteria.</div>';
+                return;
+            }
+            
+            let html = '<div class="destination-cards">';
+            destinations.forEach(dest => {
+                // Skip destinations with no flights or hotels
+                if (!dest.flights || dest.flights.length === 0 || !dest.hotels || dest.hotels.length === 0) {
+                    return;
+                }
+
+                // Calculate price ranges
+                const flightPrices = dest.flights.map(f => f.price);
+                const hotelPrices = dest.hotels.map(h => h.total_price);
+                
+                const minFlightPrice = Math.min(...flightPrices);
+                const maxFlightPrice = Math.max(...flightPrices);
+                const minHotelPrice = Math.min(...hotelPrices);
+                const maxHotelPrice = Math.max(...hotelPrices);
+                
+                const minTotalPrice = minFlightPrice + minHotelPrice;
+                const maxTotalPrice = maxFlightPrice + maxHotelPrice;
+                
+                html += `
+                <div class="destination-card" onclick="viewDestinationFlights('${dest.city}')">
+                    <h3>${dest.city}</h3>
+                    <p><strong>Airport:</strong> ${dest.airport_code}</p>
+                    <p><strong>Activities:</strong> ${dest.activities}</p>
+                    <div class="price-range">
+                        <p><strong>Price Range:</strong> $${minTotalPrice} - $${maxTotalPrice}</p>
+                        <p class="price-breakdown">
+                            <span>Flights: $${minFlightPrice} - $${maxFlightPrice}</span><br>
+                            <span>Hotels: $${minHotelPrice} - $${maxHotelPrice}</span>
+                        </p>
+                    </div>
+                </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+        
+        function viewDestinationFlights(city) {
+            window.location.href = `/destination_flights?city=${encodeURIComponent(city)}&vacation_type=${encodeURIComponent(vacationType)}&travel_date=${encodeURIComponent(travelDate)}&budget=${encodeURIComponent(budget)}&vacation_length=${encodeURIComponent(vacationLength)}`;
+        }
+        
+        // Start fetching destinations when page loads
+        fetchDestinations();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,186 @@
+.flights-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.flights-table th, .flights-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.flights-table th {
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    position: relative;
+}
+
+.flights-table th:hover {
+    background-color: #660000;
+}
+
+.flights-table th::after {
+    content: '↕';
+    position: absolute;
+    right: 10px;
+    opacity: 0.5;
+}
+
+.flights-table th.asc::after {
+    content: '↑';
+    opacity: 1;
+}
+
+.flights-table th.desc::after {
+    content: '↓';
+    opacity: 1;
+}
+
+.flights-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.flights-table tr.selected {
+    background-color: rgba(139, 0, 0, 0.1);
+}
+
+.price {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.destination-header {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    padding: 10px;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+
+.no-flights {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #666;
+}
+
+.back-button {
+    margin-bottom: 20px;
+}
+
+/* Hotel Styles */
+.hotels-section {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.hotels-section h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.hotels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.hotel-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.hotel-card:hover {
+    transform: translateY(-5px);
+}
+
+.hotel-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.hotel-card .price {
+    color: #2ecc71;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.hotel-card .rating {
+    color: #f39c12;
+    margin: 10px 0;
+}
+
+.hotel-card .address {
+    color: #666;
+    margin: 10px 0;
+}
+
+.hotel-card .amenities {
+    margin: 15px 0;
+}
+
+.hotel-card .amenities ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.hotel-card .amenities li {
+    display: inline-block;
+    background-color: #f1f1f1;
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 15px;
+    font-size: 0.9em;
+}
+
+.hotel-card .dates {
+    color: #666;
+    font-size: 0.9em;
+    margin: 10px 0;
+}
+
+.hotel-card button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+    transition: background-color 0.2s;
+}
+
+.hotel-card button:hover {
+    background-color: #2980b9;
+}
+
+.no-hotels {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+} 
