@@ -33,8 +33,8 @@ trip_details = {
 # API classes
 class FlightAPI:
     def __init__(self):
-        # self.api_key = "4d4a48186e6f8239f71f0cb805a2c33745f8a2e2c17d469af687c930c25bf7c5"  # Replace with your actual SerpApi key
-        self.api_key = "your_api_key_here"
+        self.api_key = os.getenv('SERP_API_KEY') # Replace with your actual SerpApi key
+        # self.api_key = "your_api_key_here"
 
     def get_flights(self, origin, destination, date, max_price=None):
         try:
@@ -163,8 +163,8 @@ class FlightAPI:
 
 class HotelAPI:
     def __init__(self):
-        # self.api_key = "4d4a48186e6f8239f71f0cb805a2c33745f8a2e2c17d469af687c930c25bf7c5"
-        self.api_key = "your_api_key_here"
+        self.api_key = os.getenv('SERP_API_KEY')
+        # self.api_key = "your_api_key_here"
     def get_hotels(self, date, location, min_rating=3.0, max_price=None, vacation_length=7):
         try:
             check_in_date = datetime.strptime(date, "%Y-%m-%d")
