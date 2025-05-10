@@ -94,7 +94,7 @@
                 const maxTotalPrice = maxFlightPrice + maxHotelPrice;
                 
                 html += `
-                <div class="destination-card" onclick="viewDestinationFlights('${dest.city}')">
+                <div class="destination-card" onclick="showDateGrid('${dest.city}')">
                     <h3>${dest.city}</h3>
                     <p><strong>Airport:</strong> ${dest.airport_code}</p>
                     <p><strong>Activities:</strong> ${dest.activities}</p>
@@ -113,9 +113,161 @@
             container.innerHTML = html;
         }
         
-        function viewDestinationFlights(city) {
-            window.location.href = `/destination_flights?city=${encodeURIComponent(city)}&vacation_type=${encodeURIComponent(vacationType)}&travel_date=${encodeURIComponent(travelDate)}&budget=${encodeURIComponent(budget)}&vacation_length=${encodeURIComponent(vacationLength)}`;
+        // Add date grid popup HTML
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="dateGridPopup" class="popup">
+                <div class="popup-content">
+                    <span class="close-popup">&times;</span>
+                    <h2>Select Travel Dates</h2>
+                    <div id="dateGridContainer"></div>
+                </div>
+            </div>
+        `);
+
+        // Add styles for the popup
+        const style = document.createElement('style');
+        style.textContent = `
+            .popup {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 1000;
+            }
+            .popup-content {
+                position: relative;
+                background-color: #fff;
+                margin: 5% auto;
+                padding: 20px;
+                width: 80%;
+                max-width: 800px;
+                border-radius: 8px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            .close-popup {
+                position: absolute;
+                right: 20px;
+                top: 10px;
+                font-size: 24px;
+                cursor: pointer;
+            }
+            .date-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 10px;
+                margin-top: 20px;
+            }
+            .date-cell {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: center;
+                cursor: pointer;
+                border-radius: 4px;
+                transition: background-color 0.3s;
+            }
+            .date-cell:hover {
+                background-color: #f0f0f0;
+            }
+            .date-cell.cheapest {
+                background-color: #e6ffe6;
+                border-color: #4CAF50;
+            }
+            .date-cell.low-price {
+                background-color: #fff3e6;
+                border-color: #FF9800;
+            }
+            .date-cell.selected {
+                background-color: #e3f2fd;
+                border-color: #2196F3;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Function to show date grid popup
+        async function showDateGrid(city) {
+            const popup = document.getElementById('dateGridPopup');
+            const container = document.getElementById('dateGridContainer');
+            
+            try {
+                // Show loading state
+                container.innerHTML = '<p>Loading date grid...</p>';
+                popup.style.display = 'block';
+                
+                // Fetch date grid data
+                const response = await fetch('/get_date_grid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        source: 'New York', // You might want to make this dynamic
+                        destination: city,
+                        start_date: travelDate,
+                        end_date: calculateEndDate(travelDate, vacationLength)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Display date grid
+                let html = '<div class="date-grid">';
+                for (const [date, info] of Object.entries(data.prices)) {
+                    const price = info.price;
+                    const type = info.price_type;
+                    const cellClass = type ? type.toLowerCase().replace(' ', '-') : '';
+                    
+                    html += `
+                        <div class="date-cell ${cellClass}" 
+                             onclick="selectDate('${city}', '${date}', '${price}')">
+                            <div class="date-range">${date}</div>
+                            <div class="price">${price}</div>
+                            ${type ? `<div class="price-type">${type}</div>` : ''}
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p>Error loading date grid. Please try again.</p>';
+            }
         }
+
+        // Function to calculate end date based on start date and vacation length
+        function calculateEndDate(startDate, length) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + parseInt(length));
+            return date.toISOString().split('T')[0];
+        }
+
+        // Function to handle date selection
+        function selectDate(city, dateRange, price) {
+            // Close the popup
+            document.getElementById('dateGridPopup').style.display = 'none';
+            
+            // Extract start and end dates from the date range
+            const [startDate, endDate] = dateRange.split(' to ');
+            
+            // Redirect to destination flights page with selected dates
+            window.location.href = `/destination_flights?city=${encodeURIComponent(city)}&vacation_type=${encodeURIComponent(vacationType)}&travel_date=${encodeURIComponent(startDate)}&budget=${encodeURIComponent(budget)}&vacation_length=${encodeURIComponent(vacationLength)}`;
+        }
+
+        // Close popup when clicking the close button or outside the popup
+        document.querySelector('.close-popup').addEventListener('click', () => {
+            document.getElementById('dateGridPopup').style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            const popup = document.getElementById('dateGridPopup');
+            if (event.target === popup) {
+                popup.style.display = 'none';
+            }
+        });
         
         // Start fetching destinations when page loads
         fetchDestinations();

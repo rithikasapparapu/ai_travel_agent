@@ -53,6 +53,17 @@ def scrape_google_flights(source, destination, start_date, end_date):
     chrome_options.add_argument('--disable-infobars')
     chrome_options.add_argument("--start-maximized")
     
+    # Initialize return data structure
+    date_grid_data = {
+        'source': source,
+        'destination': destination,
+        'search_dates': {
+            'start': start_date,
+            'end': end_date
+        },
+        'prices': {}
+    }
+    
     try:
         # Initialize the Chrome WebDriver
         driver = webdriver.Chrome(options=chrome_options)
@@ -283,11 +294,19 @@ def scrape_google_flights(source, destination, start_date, end_date):
                             # Clean up the price string to just show the amount
                             price = price.split(',')[0].strip()
                             
+                            # Add to price data list
                             price_data.append({
                                 'date_range': date if date else "Unknown Date",
                                 'price': price,
                                 'price_type': price_type
                             })
+                            
+                            # Add to the return data structure
+                            if date:
+                                date_grid_data['prices'][date] = {
+                                    'price': price,
+                                    'price_type': price_type
+                                }
                             
                             # Format the output message
                             output_msg = f"Found price: {price}"
@@ -350,6 +369,8 @@ def scrape_google_flights(source, destination, start_date, end_date):
     finally:
         if 'driver' in locals():
             driver.quit()
+    
+    return date_grid_data
 
 def main():
     print("Google Flights Scraper")
@@ -370,7 +391,22 @@ def main():
     print(f"Start date: {start_date}")
     print(f"End date: {end_date}")
     
-    scrape_google_flights(source, destination, start_date, end_date)
+    # Get the date grid data
+    date_grid_data = scrape_google_flights(source, destination, start_date, end_date)
+    
+    # Print the structured data
+    print("\nStructured Date Grid Data:")
+    print("=" * 50)
+    print(f"Source: {date_grid_data['source']}")
+    print(f"Destination: {date_grid_data['destination']}")
+    print(f"Search Dates: {date_grid_data['search_dates']}")
+    print("\nPrices:")
+    for date, price_info in date_grid_data['prices'].items():
+        print(f"Date: {date}")
+        print(f"  Price: {price_info['price']}")
+        if price_info['price_type']:
+            print(f"  Type: {price_info['price_type']}")
+        print("-" * 30)
 
 if __name__ == "__main__":
     main() 

@@ -8,6 +8,7 @@ from serpapi.google_search import GoogleSearch
 import os
 from dotenv import load_dotenv
 from flight_deals_scraper import get_flight_deals
+from date_grid_scraper import scrape_google_flights
 
 # Load environment variables
 load_dotenv()
@@ -41,9 +42,9 @@ class FlightAPI:
             all_flights = []
             base_date = datetime.strptime(date, "%Y-%m-%d")
             dates = [
-                (base_date - timedelta(days=1)).strftime("%Y-%m-%d"),
-                base_date.strftime("%Y-%m-%d"),
-                (base_date + timedelta(days=1)).strftime("%Y-%m-%d")
+                # (base_date - timedelta(days=1)).strftime("%Y-%m-%d"),
+                base_date.strftime("%Y-%m-%d")
+                # (base_date + timedelta(days=1)).strftime("%Y-%m-%d")
             ]
             
             for search_date in dates:
@@ -467,16 +468,21 @@ def get_all_flights():
         }
         
         # Get destination options
+        print("Initializing HoustonTravelRAG...")
         rag = HoustonTravelRAG()
         destinations = rag._get_base_locations(vacation_type, travel_date)
+        print(f"Destinations retrieved")
         
         # Default origin airport (can be made configurable)
         origin_airport = "DFW"  # Dallas/Fort Worth International Airport
+        print(f"Using origin airport: {origin_airport}")
         
         # Fetch flights and hotels for each destination
         flight_api = FlightAPI()
         hotel_api = HotelAPI()
         for dest in destinations:
+            print(f"Processing destination: {dest['city']} ({dest['airport_code']})")
+            
             # Fetch flights with flight budget
             dest['flights'] = flight_api.get_flights(
                 origin=origin_airport,
@@ -484,9 +490,11 @@ def get_all_flights():
                 date=travel_date,
                 max_price=flight_budget
             )
+            print(f"Flights found")
             
             # Calculate max price per night based on total hotel budget and vacation length
             max_price_per_night = int(hotel_budget / vacation_length)
+            print(f"Max price per night for hotels: {max_price_per_night}")
             
             # Fetch hotels with calculated max price per night
             dest['hotels'] = hotel_api.get_hotels(
@@ -495,9 +503,11 @@ def get_all_flights():
                 max_price=max_price_per_night,
                 vacation_length=vacation_length
             )
+            print(f"Hotels found")
         
         # Store the destinations data globally
         destination_data = {dest['city']: dest for dest in destinations}
+        print(f"Destination data stored")
         
         return jsonify({"destinations": destinations})
     except Exception as e:
@@ -608,6 +618,22 @@ def generate_itinerary():
     except Exception as e:
         print(f"Error generating itinerary: {str(e)}")
         return jsonify({"itinerary": "Sorry, there was an error generating your itinerary. Please try again."})
+
+@app.route('/get_date_grid', methods=['POST'])
+def get_date_grid():
+    try:
+        data = request.json
+        source = data.get('source')
+        destination = data.get('destination')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        # Call the date grid scraper
+        date_grid_data = scrape_google_flights(source, destination, start_date, end_date)
+        
+        return jsonify(date_grid_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
